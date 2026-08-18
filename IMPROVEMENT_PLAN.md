@@ -1,0 +1,12 @@
+# Completion plan
+
+1. Establish upstream provenance before portfolio use. The large storefront component library, Sanity template manifest/data bundle, funding file and 16 KB README indicate a substantial pre-existing commerce starter/template; identify its exact source/version and license.
+2. Diff this repository against upstream and document only demonstrable custom work. Do not claim the inherited cart, collections, mega navigation, Sanity schemas or checkout integration as original engineering without commit evidence.
+3. Audit the bundled `.sanity-template/data/production.tar.gz` (~30 MB) before any public showcase: determine content ownership, remove private/customer data, and replace with a small sanitized seed dataset when redistribution is permitted.
+4. Inventory all commerce/CMS integrations from configuration and source (Sanity plus payment/checkout/provider APIs actually present). Separate public project/dataset IDs from server secrets and rotate any real credentials found in history.
+5. Verify the actual customer journey end-to-end against sandbox services: home/collection, filters/sort, product detail/options, cart add/update/remove, checkout handoff and post-checkout behavior. Mark inherited but unconfigured flows explicitly.
+6. Harden commerce state and validation: unavailable variants, inventory changes, invalid quantities, stale cart, currency/price formatting, provider failures and double-submit behavior must fail safely rather than trusting client state.
+7. Audit the rich Sanity content/rendering surface for unsafe links/portable text, missing assets, image sizing/alt text and schema assumptions; ensure preview/editor data cannot leak into production storefront responses.
+8. Accessibility/performance pass on navigation, mega menus, drawers, listboxes, filters, carousel and cart: keyboard/focus/escape semantics, reduced motion, responsive images, layout shift and bundle/runtime cost.
+9. Add focused tests for any custom storefront/CMS logic plus smoke tests for the verified shopping flow using mocked/sandbox integrations; CI should lint/test/build without production credentials.
+10. Rewrite README with upstream attribution, exact custom contribution, architecture/integrations, safe seed-data setup, verified shopping flows, screenshots and limitations. Portfolio framing should be commerce customization/integration unless the diff proves substantial original implementation.
