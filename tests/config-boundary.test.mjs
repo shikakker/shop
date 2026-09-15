@@ -23,6 +23,10 @@ test('Next config does not expose server-only provider credentials through the p
   }
 })
 
+test('Next 15 config does not keep the removed swcMinify option', () => {
+  assert.doesNotMatch(config, /\bswcMinify\s*:/)
+})
+
 test('Sanity redirect client is created lazily only when public CMS identifiers are configured', () => {
   assert.doesNotMatch(config, /^const client = sanityClient/m)
   assert.match(config, /if\s*\(!projectId\s*\|\|\s*!dataset\)\s*\{?\s*return \[\]/)
