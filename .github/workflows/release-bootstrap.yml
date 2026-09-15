@@ -1,0 +1,43 @@
+name: Release bootstrap
+
+on:
+  push:
+    branches: [portfolio-improvements-2026-08]
+    paths:
+      - .github/workflows/release-bootstrap.yml
+
+permissions:
+  contents: write
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: portfolio-improvements-2026-08
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Generate deterministic root lockfile
+        run: npm install --package-lock-only --ignore-scripts
+      - name: Clean install
+        run: npm ci --ignore-scripts
+      - name: Regression contracts
+        run: npm test
+      - name: TypeScript
+        run: npm run typecheck
+      - name: Production storefront build
+        run: npm run build
+      - name: Commit verified lockfile
+        run: |
+          git config user.name 'Egor Denisov'
+          git config user.email 'designer.egor@ya.ru'
+          git add package-lock.json
+          if git diff --cached --quiet; then
+            echo 'No lockfile changes to commit'
+            exit 0
+          fi
+          git commit -m 'build: add verified storefront lockfile'
+          git push origin HEAD:portfolio-improvements-2026-08
