@@ -20,6 +20,10 @@ test('storefront data queries do not import Sanity Studio schema or UI modules',
   assert.match(queries, /shop-sort-types/)
 })
 
+test('unused vulnerable query-string dependency is not part of the storefront graph', () => {
+  assert.equal(pkg.dependencies['query-string'], undefined)
+})
+
 test('release scripts expose deterministic verification hooks', () => {
   assert.equal(pkg.scripts.test, 'node --test tests/*.test.mjs')
   assert.equal(pkg.scripts.typecheck, 'tsc --noEmit')
