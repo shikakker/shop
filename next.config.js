@@ -48,7 +48,6 @@ async function fetchSanityRedirects() {
 }
 
 module.exports = withBundleAnalyzer({
-  swcMinify: true,
   env: {
     // Public identifiers used by browser-side clients. Server credentials must
     // never be added here because Next.js inlines this object into client code.
