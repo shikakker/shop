@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 
 const pkg = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'))
+const queries = await readFile(new URL('../data/queries.js', import.meta.url), 'utf8')
 
 test('storefront production build does not depend on Sanity Studio compilation', () => {
   assert.equal(pkg.scripts.build, 'next build')
@@ -12,6 +13,11 @@ test('storefront production build does not depend on Sanity Studio compilation',
 
 test('production dependency install does not implicitly install the legacy Studio toolchain', () => {
   assert.notEqual(typeof pkg.scripts.postinstall, 'string')
+})
+
+test('storefront data queries do not import Sanity Studio schema or UI modules', () => {
+  assert.doesNotMatch(queries, /studio\/schemas/)
+  assert.match(queries, /shop-sort-types/)
 })
 
 test('release scripts expose deterministic verification hooks', () => {
