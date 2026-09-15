@@ -1,11 +1,11 @@
 import React, { useRef, useState, useEffect } from 'react'
 import FocusTrap from 'focus-trap-react'
 import { m } from 'framer-motion'
-import { useRect } from '@reach/rect'
 import cx from 'classnames'
 
 import { isBrowser } from '@lib/helpers'
 import { swipeAnim } from '@lib/animate'
+import { useElementRect } from '@lib/use-element-rect'
 
 import { useSiteContext, useToggleMegaNav } from '@lib/context'
 
@@ -22,7 +22,7 @@ const MegaNavigation = ({ items = [], headerHeight }) => {
   const toggleMegaNav = useToggleMegaNav()
   const { meganav } = useSiteContext()
   const activeNav = useRef()
-  const activeNavRect = useRect(activeNav, { observe: true })
+  const activeNavRect = useElementRect(activeNav)
   const [hasFocus, setHasFocus] = useState(false)
 
   const handleKeyDown = (e) => {
