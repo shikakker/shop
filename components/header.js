@@ -2,12 +2,12 @@ import React, { useState, useRef, useEffect } from 'react'
 import { m } from 'framer-motion'
 import FocusTrap from 'focus-trap-react'
 import { useInView } from 'react-cool-inview'
-import { useRect } from '@reach/rect'
 import { useRouter } from 'next/router'
 import Link from 'next/link'
 import cx from 'classnames'
 
 import { isBrowser } from '@lib/helpers'
+import { useElementRect } from '@lib/use-element-rect'
 
 import {
   useSiteContext,
@@ -22,7 +22,6 @@ import MegaNavigation from '@components/menu-mega-nav'
 import Icon from '@components/icon'
 
 const Header = ({ data = {}, isTransparent, onSetup = () => {} }) => {
-  // expand our header data
   const {
     promo,
     menuDesktopLeft,
@@ -31,15 +30,13 @@ const Header = ({ data = {}, isTransparent, onSetup = () => {} }) => {
     menuMobileSecondary,
   } = data
 
-  // setup states
   const [isMobileNavOpen, setMobileNavOpen] = useState(false)
   const [headerHeight, setHeaderHeight] = useState(null)
   const { observe, inView: observerIsVisible } = useInView()
   const headerRef = useRef()
-  const headerRect = useRect(headerRef)
+  const headerRect = useElementRect(headerRef)
   const router = useRouter()
 
-  // setup menu toggle event
   const toggleMobileNav = (state) => {
     setMobileNavOpen(state)
 
@@ -48,7 +45,6 @@ const Header = ({ data = {}, isTransparent, onSetup = () => {} }) => {
     }
   }
 
-  // context helpers
   const { meganav } = useSiteContext()
   const toggleMegaNav = useToggleMegaNav()
 
@@ -60,7 +56,7 @@ const Header = ({ data = {}, isTransparent, onSetup = () => {} }) => {
 
   useEffect(() => {
     onSetup({ height: headerHeight })
-  }, [headerHeight])
+  }, [headerHeight, onSetup])
 
   return (
     <>
@@ -99,7 +95,6 @@ const Header = ({ data = {}, isTransparent, onSetup = () => {} }) => {
               </div>
 
               <nav className="main-navigation" role="navigation">
-                {/* Mobile Header Menu */}
                 <div id="mobile-nav" className="main-navigation--mobile">
                   <FocusTrap active={isMobileNavOpen}>
                     <div>
@@ -120,12 +115,8 @@ const Header = ({ data = {}, isTransparent, onSetup = () => {} }) => {
                         initial="hide"
                         animate={isMobileNavOpen ? 'show' : 'hide'}
                         variants={{
-                          show: {
-                            x: '0%',
-                          },
-                          hide: {
-                            x: '-100%',
-                          },
+                          show: { x: '0%' },
+                          hide: { x: '-100%' },
                         }}
                         transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
                         className="menu-mobile"
@@ -163,7 +154,6 @@ const Header = ({ data = {}, isTransparent, onSetup = () => {} }) => {
                   <CartToggle />
                 </div>
 
-                {/* Desktop Header Menu */}
                 <div className="main-navigation--desktop">
                   <div className="menu-left">
                     {menuDesktopLeft?.items && (
