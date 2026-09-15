@@ -23,6 +23,7 @@ jobs:
       - name: Define supported security-patched dependency graph
         run: |
           npm pkg delete 'dependencies.@reach/rect'
+          npm pkg delete 'dependencies.embla-carousel-react'
           npm pkg set \
             'dependencies.next=15.5.24' \
             'dependencies.react=18.2.0' \
