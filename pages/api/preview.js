@@ -1,27 +1,55 @@
-import { getStaticRoute, getDynamicRoute } from '@lib/routes'
+import { timingSafeEqual } from 'node:crypto'
+import { getDynamicRoute, getStaticRoute } from '@lib/routes'
+
+const SAFE_SLUG = /^[A-Za-z0-9][A-Za-z0-9_-]{0,119}$/
+
+function secretsMatch(provided, expected) {
+  if (typeof provided !== 'string' || typeof expected !== 'string') {
+    return false
+  }
+
+  const providedBuffer = Buffer.from(provided)
+  const expectedBuffer = Buffer.from(expected)
+
+  return (
+    providedBuffer.length === expectedBuffer.length &&
+    timingSafeEqual(providedBuffer, expectedBuffer)
+  )
+}
 
 export default function handler(req, res) {
-  // Bail if no secret or slug defined
-  if (req.query.token !== 'HULL' || !req.query.type) {
+  res.setHeader('Cache-Control', 'private, no-store, max-age=0')
+
+  if (req.method !== 'GET') {
+    res.setHeader('Allow', ['GET'])
+    return res.status(405).json({ message: 'Method not allowed' })
+  }
+
+  const previewSecret = process.env.SANITY_PREVIEW_SECRET
+  if (!previewSecret || !secretsMatch(req.query.token, previewSecret)) {
     return res.status(401).json({ message: 'Invalid preview request' })
   }
 
-  // determine if it's a dynamic route
-  const isStatic = getStaticRoute(req.query.type)
-  const isDynamic = getDynamicRoute(req.query.type)
+  if (typeof req.query.type !== 'string') {
+    return res.status(400).json({ message: 'Invalid preview target' })
+  }
 
-  // Enable Preview Mode by setting the cookies and passing the sanity token for fetching
-  res.setPreviewData(
-    { token: process.env.SANITY_API_TOKEN },
-    {
-      maxAge: 20,
-    }
-  )
+  const staticRoute = getStaticRoute(req.query.type)
+  const dynamicRoute = getDynamicRoute(req.query.type)
 
-  // Redirect to the associated page
-  res.redirect(
-    isStatic
-      ? `/${isStatic}`
-      : `/${isDynamic ? `${isDynamic}/` : ''}${req.query.slug}`
-  )
+  if (staticRoute) {
+    res.setPreviewData({ active: true }, { maxAge: 20 })
+    return res.redirect(`/${staticRoute}`)
+  }
+
+  if (
+    !dynamicRoute ||
+    typeof req.query.slug !== 'string' ||
+    !SAFE_SLUG.test(req.query.slug)
+  ) {
+    return res.status(400).json({ message: 'Invalid preview target' })
+  }
+
+  res.setPreviewData({ active: true }, { maxAge: 20 })
+  return res.redirect(`/${dynamicRoute}/${req.query.slug}`)
 }
