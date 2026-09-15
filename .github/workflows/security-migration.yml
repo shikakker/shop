@@ -1,0 +1,45 @@
+name: Security migration
+
+on:
+  push:
+    branches: [portfolio-improvements-2026-08]
+    paths:
+      - .github/workflows/security-migration.yml
+
+permissions:
+  contents: write
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: portfolio-improvements-2026-08
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install supported security-patched runtime
+        run: |
+          npm install --save-exact next@15.5.24 react@18.2.0 react-dom@18.2.0 axios@1.20.0 --ignore-scripts
+          npm install --save-dev --save-exact @next/bundle-analyzer@15.5.24 typescript@5.9.2 @types/node@22.18.6 @types/react@18.3.24 @types/react-dom@18.3.7 --ignore-scripts
+      - name: Regression contracts
+        run: npm test
+      - name: TypeScript
+        run: npm run typecheck
+      - name: Production storefront build
+        run: npm run build
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
+      - name: Commit verified dependency graph
+        run: |
+          git config user.name 'Egor Denisov'
+          git config user.email 'designer.egor@ya.ru'
+          git add package.json package-lock.json tsconfig.json next-env.d.ts
+          if git diff --cached --quiet; then
+            echo 'No dependency changes to commit'
+            exit 0
+          fi
+          git commit -m 'security: migrate storefront to patched runtime'
+          git push origin HEAD:portfolio-improvements-2026-08
