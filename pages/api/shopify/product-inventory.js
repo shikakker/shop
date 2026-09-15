@@ -3,17 +3,17 @@ import axios from 'axios'
 export default async function send(req, res) {
   if (req.method !== 'GET') {
     res.setHeader('Allow', 'GET')
-    return res.status(405).json({ error: 'Method not allowed' })
+    return res.status(405).json({ error: 'METHOD_NOT_ALLOWED' })
   }
 
   const rawId = Array.isArray(req.query?.id) ? req.query.id[0] : req.query?.id
   const productId = Number(rawId)
   if (!Number.isSafeInteger(productId) || productId <= 0) {
-    return res.status(400).json({ error: 'Valid numeric product ID required' })
+    return res.status(400).json({ error: 'PRODUCT_ID_INVALID' })
   }
 
   if (!process.env.SHOPIFY_STORE_ID || !process.env.SHOPIFY_ADMIN_API_TOKEN) {
-    return res.status(503).json({ error: 'Shopify API not configured' })
+    return res.status(503).json({ error: 'SHOPIFY_NOT_CONFIGURED' })
   }
 
   const shopifyConfig = {
@@ -32,18 +32,18 @@ export default async function send(req, res) {
     })
 
     if (response.status === 404) {
-      return res.status(404).json({ error: 'Product not found' })
+      return res.status(404).json({ error: 'PRODUCT_NOT_FOUND' })
     }
     if (response.status < 200 || response.status >= 300) {
-      return res.status(502).json({ error: 'Shopify inventory request failed' })
+      return res.status(502).json({ error: 'SHOPIFY_UPSTREAM_ERROR' })
     }
     shopifyProduct = response.data?.product
   } catch {
-    return res.status(502).json({ error: 'Shopify inventory request failed' })
+    return res.status(502).json({ error: 'SHOPIFY_UPSTREAM_ERROR' })
   }
 
   if (!shopifyProduct?.variants?.length) {
-    return res.status(404).json({ error: 'Product not found' })
+    return res.status(404).json({ error: 'PRODUCT_NOT_FOUND' })
   }
 
   const variants = shopifyProduct.variants
