@@ -36,9 +36,10 @@ test('published and preview Sanity clients are lazy and configuration-aware', ()
 })
 
 test('CMS-backed data helpers fail closed without provider configuration', () => {
+  assert.match(data, /const emptyPageData = \(\) => \(\{ page: null, site: null \}\)/)
   assert.match(data, /if\s*\(!isSanityConfigured\(\)\)/)
   assert.match(data, /return \[\]/)
-  assert.match(data, /return \{ page: null, site: null \}/)
+  assert.match(data, /return emptyPageData\(\)/)
 })
 
 test('redirect provider failure does not take down the storefront build', () => {
