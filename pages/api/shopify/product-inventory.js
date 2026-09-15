@@ -1,54 +1,52 @@
 import axios from 'axios'
 
 export default async function send(req, res) {
-  const {
-    query: { id },
-  } = req
-
-  const hasShopify =
-    process.env.SHOPIFY_STORE_ID && process.env.SHOPIFY_ADMIN_API_TOKEN
-
-  // Bail if no product ID was supplied
-  if (!id) {
-    return res.status(401).json({ error: 'Product ID required' })
+  if (req.method !== 'GET') {
+    res.setHeader('Allow', 'GET')
+    return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  // Bail if no Shopify API credentials were supplied
-  if (!hasShopify) {
-    return res.status(401).json({ error: 'Shopify API not setup' })
+  const rawId = Array.isArray(req.query?.id) ? req.query.id[0] : req.query?.id
+  const productId = Number(rawId)
+  if (!Number.isSafeInteger(productId) || productId <= 0) {
+    return res.status(400).json({ error: 'Valid numeric product ID required' })
   }
 
-  // Setup our Shopify connection
+  if (!process.env.SHOPIFY_STORE_ID || !process.env.SHOPIFY_ADMIN_API_TOKEN) {
+    return res.status(503).json({ error: 'Shopify API not configured' })
+  }
+
   const shopifyConfig = {
     'Content-Type': 'application/json',
     'X-Shopify-Access-Token': process.env.SHOPIFY_ADMIN_API_TOKEN,
   }
 
-  // Fetch our product from Shopify
-  const shopifyProduct = await axios({
-    url: `https://${process.env.SHOPIFY_STORE_ID}.myshopify.com/admin/api/2021-01/products/${id}.json`,
-    method: 'GET',
-    headers: shopifyConfig,
-  })
-    .then((response) => {
-      if (response.data?.product) {
-        return response.data.product
-      } else {
-        return null
-      }
-    })
-    .catch(() => {
-      return null
+  let shopifyProduct
+  try {
+    const response = await axios({
+      url: `https://${process.env.SHOPIFY_STORE_ID}.myshopify.com/admin/api/2021-01/products/${productId}.json`,
+      method: 'GET',
+      headers: shopifyConfig,
+      timeout: 10000,
+      validateStatus: () => true,
     })
 
-  // bail if Shopify can't find the product
-  if (!shopifyProduct)
-    return res.status(401).json({ error: 'Product not found' })
+    if (response.status === 404) {
+      return res.status(404).json({ error: 'Product not found' })
+    }
+    if (response.status < 200 || response.status >= 300) {
+      return res.status(502).json({ error: 'Shopify inventory request failed' })
+    }
+    shopifyProduct = response.data?.product
+  } catch {
+    return res.status(502).json({ error: 'Shopify inventory request failed' })
+  }
 
-  // get our products variants
+  if (!shopifyProduct?.variants?.length) {
+    return res.status(404).json({ error: 'Product not found' })
+  }
+
   const variants = shopifyProduct.variants
-
-  // construct our inventory object
   const product = {
     inStock: variants.some(
       (v) =>
@@ -68,6 +66,5 @@ export default async function send(req, res) {
     })),
   }
 
-  res.statusCode = 200
-  res.json(product)
+  return res.status(200).json(product)
 }
