@@ -1,24 +1,38 @@
-import { getSanityClient } from '@lib/sanity'
+import { getSanityClient, isSanityConfigured } from '@lib/sanity'
 import * as queries from './queries'
+
+const emptyPageData = () => ({ page: null, site: null })
 
 // Fetch all dynamic docs
 export async function getAllDocSlugs(doc) {
+  if (!isSanityConfigured()) {
+    return []
+  }
+
   const data = await getSanityClient().fetch(
     `*[_type == "${doc}" && !(_id in [${queries.homeID}, ${queries.shopID}, ${queries.errorID}]) && wasDeleted != true && isDraft != true]{ "slug": slug.current }`
   )
-  return data
+  return Array.isArray(data) ? data : []
 }
 
 // Fetch all our page redirects
 export async function getAllRedirects() {
+  if (!isSanityConfigured()) {
+    return []
+  }
+
   const data = await getSanityClient().fetch(
     `*[_type == "redirect"]{ from, to }`
   )
-  return data
+  return Array.isArray(data) ? data : []
 }
 
 // Fetch a static page with our global data
 export async function getStaticPage(pageData, preview) {
+  if (!isSanityConfigured()) {
+    return emptyPageData()
+  }
+
   const query = `
   {
     "page": ${pageData},
@@ -26,13 +40,15 @@ export async function getStaticPage(pageData, preview) {
   }
   `
 
-  const data = await getSanityClient(preview).fetch(query)
-
-  return data
+  return getSanityClient(preview).fetch(query)
 }
 
 // Fetch a specific dynamic page with our global data
 export async function getPage(slug, preview) {
+  if (!isSanityConfigured()) {
+    return emptyPageData()
+  }
+
   const slugs = JSON.stringify([slug, `/${slug}`, `/${slug}/`])
 
   const query = `
@@ -55,13 +71,15 @@ export async function getPage(slug, preview) {
     }
   `
 
-  const data = await getSanityClient(preview).fetch(query)
-
-  return data
+  return getSanityClient(preview).fetch(query)
 }
 
 // Fetch a specific product with our global data
 export async function getProduct(slug, preview) {
+  if (!isSanityConfigured()) {
+    return emptyPageData()
+  }
+
   const query = `
     {
       "page": *[_type == "product" && slug.current == "${slug}" && wasDeleted != true && isDraft != true] | order(_updatedAt desc)[0]{
@@ -83,13 +101,15 @@ export async function getProduct(slug, preview) {
     }
   `
 
-  const data = await getSanityClient(preview).fetch(query)
-
-  return data
+  return getSanityClient(preview).fetch(query)
 }
 
 // Fetch a specific collection with our global data
 export async function getCollection(slug, preview) {
+  if (!isSanityConfigured()) {
+    return emptyPageData()
+  }
+
   const query = `
     {
       "page": *[_type == "collection" && slug.current == "${slug}"] | order(_updatedAt desc)[0]{
@@ -111,9 +131,7 @@ export async function getCollection(slug, preview) {
     }
   `
 
-  const data = await getSanityClient(preview).fetch(query)
-
-  return data
+  return getSanityClient(preview).fetch(query)
 }
 
 export { queries }
