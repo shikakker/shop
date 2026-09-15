@@ -21,7 +21,7 @@ const Carousel = ({
 
   const [sliderRef, slider] = useEmblaCarousel({
     loop: true,
-    draggable: hasDrag,
+    watchDrag: hasDrag,
   })
 
   const scrollPrev = useCallback(() => slider?.scrollPrev(), [slider])
@@ -29,16 +29,20 @@ const Carousel = ({
   const scrollTo = useCallback((index) => slider?.scrollTo(index), [slider])
 
   const onSelect = useCallback(() => {
-    setCurrentSlide(slider.selectedScrollSnap())
+    if (slider) {
+      setCurrentSlide(slider.selectedScrollSnap())
+    }
   }, [slider])
 
   useEffect(() => {
-    if (slider) {
-      setScrollSnaps(slider.scrollSnapList())
-      slider.on('select', onSelect)
-      onSelect()
-    }
-  }, [slider])
+    if (!slider) return undefined
+
+    setScrollSnaps(slider.scrollSnapList())
+    slider.on('select', onSelect)
+    onSelect()
+
+    return () => slider.off('select', onSelect)
+  }, [slider, onSelect])
 
   return (
     <div className={cx('carousel', { 'has-drag': hasDrag }, className)}>

@@ -1,6 +1,5 @@
 import sanityClient from '@sanity/client'
-import crypto from 'crypto'
-const getRawBody = require('raw-body')
+import { readVerifiedShopifyWebhook } from '../../../lib/shopify-security'
 
 const sanity = sanityClient({
   dataset: process.env.SANITY_PROJECT_DATASET,
@@ -10,81 +9,37 @@ const sanity = sanityClient({
   useCdn: false,
 })
 
-// Turn off default NextJS bodyParser, so we can run our own middleware
 export const config = {
   api: {
     bodyParser: false,
   },
 }
 
-// Custom Middleware to parse Shopify's webhook payload
-const runMiddleware = (req, res, fn) => {
-  new Promise((resolve) => {
-    if (!req.body) {
-      let buffer = ''
-      req.on('data', (chunk) => {
-        buffer += chunk
-      })
-
-      req.on('end', () => {
-        resolve()
-        req.body = JSON.parse(Buffer.from(buffer).toString())
-      })
-    }
-  })
-}
-
 export default async function send(req, res) {
-  // bail if it's not a post request or it's missing an ID
   if (req.method !== 'POST') {
-    console.error('Must be a POST request with a product ID')
-    return res
-      .status(200)
-      .json({ error: 'Must be a POST request with a product ID' })
+    res.setHeader('Allow', 'POST')
+    return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  /*  ------------------------------ */
-  /*  1. Run our middleware
-  /*  2. check webhook integrity
-  /*  ------------------------------ */
-
-  // run our middleware to extract the "raw" body for matching the Shopify Integrity Key
-  await runMiddleware(req, res)
-  const rawBody = await getRawBody(req)
-
-  // get request integrity header
-  const hmac = req.headers['x-shopify-hmac-sha256']
-  const generatedHash = await crypto
-    .createHmac('sha256', process.env.SHOPIFY_WEBHOOK_INTEGRITY)
-    .update(rawBody, 'utf8', 'hex')
-    .digest('base64')
-
-  // bail if shopify integrity doesn't match
-  if (hmac !== generatedHash) {
-    console.error('Unable to verify from Shopify')
-    return res.status(200).json({ error: 'Unable to verify from Shopify' })
+  const verified = await readVerifiedShopifyWebhook(req)
+  if (!verified.ok) {
+    return res.status(verified.status).json({ error: verified.error })
   }
 
-  // extract shopify data
-  const {
-    body: { id, title },
-  } = req
+  const { id, title } = verified.body || {}
+  if (!Number.isSafeInteger(Number(id)) || !id) {
+    return res.status(400).json({ error: 'Invalid Shopify product ID' })
+  }
 
-  /*  ------------------------------ */
-  /*  Begin Sanity Product Sync
-  /*  ------------------------------ */
-
-  console.log(`Deleting product from Sanity: ${title} (id: ${id})`)
+  console.log(`Deleting product from Sanity: ${title || 'Untitled'} (id: ${id})`)
   let stx = sanity.transaction()
-
-  // patch (update) product document with core shopify data
   stx = stx.patch(`product-${id}`, (patch) => patch.set({ wasDeleted: true }))
 
-  const result = await stx.commit()
-
-  console.info('Sync complete!')
-  console.log(result)
-
-  res.statusCode = 200
-  res.json(JSON.stringify(result))
+  try {
+    const result = await stx.commit()
+    console.info('Sync complete!')
+    return res.status(200).json(result)
+  } catch {
+    return res.status(502).json({ error: 'Unable to update product state' })
+  }
 }

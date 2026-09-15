@@ -1,4 +1,4 @@
-import { sortTypes } from '../studio/schemas/objects/shop-sort'
+import { sortTypes } from './shop-sort-types'
 
 // Create our sorting fallback titles from Sanity
 const sortFallbacks = sortTypes
