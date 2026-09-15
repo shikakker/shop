@@ -20,6 +20,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Remove unused React 17-only dependency
+        run: npm uninstall @reach/rect --ignore-scripts
       - name: Install supported security-patched runtime
         run: |
           npm install --save-exact next@15.5.24 react@18.2.0 react-dom@18.2.0 axios@1.20.0 --ignore-scripts
