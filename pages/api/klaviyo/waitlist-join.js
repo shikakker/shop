@@ -1,4 +1,3 @@
-import queryString from 'query-string'
 import axios from 'axios'
 
 export default async function send(req, res) {
@@ -23,17 +22,20 @@ export default async function send(req, res) {
       .json({ error: 'Must contain an email address and account ID' })
   }
 
-  const payload = queryString.stringify({
-    a: accountID,
+  const payload = new URLSearchParams({
+    a: String(accountID),
     platform: 'shopify',
-    email: email,
-    variant: variant,
+    email: String(email),
   })
+
+  if (variant !== undefined && variant !== null) {
+    payload.set('variant', String(variant))
+  }
 
   const options = {
     method: 'POST',
     headers: { 'content-type': 'application/x-www-form-urlencoded' },
-    data: payload,
+    data: payload.toString(),
     url: 'https://a.klaviyo.com/api/v1/catalog/subscribe',
   }
 
