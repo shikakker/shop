@@ -3,6 +3,8 @@ import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 
 const config = await readFile(new URL('../next.config.js', import.meta.url), 'utf8')
+const sanity = await readFile(new URL('../lib/sanity.js', import.meta.url), 'utf8')
+const data = await readFile(new URL('../data/index.js', import.meta.url), 'utf8')
 
 const serverOnlyNames = [
   'SANITY_API_TOKEN',
@@ -25,6 +27,18 @@ test('Sanity redirect client is created lazily only when public CMS identifiers 
   assert.doesNotMatch(config, /^const client = sanityClient/m)
   assert.match(config, /if\s*\(!projectId\s*\|\|\s*!dataset\)\s*\{?\s*return \[\]/)
   assert.match(config, /async function fetchSanityRedirects/)
+})
+
+test('published and preview Sanity clients are lazy and configuration-aware', () => {
+  assert.match(sanity, /isSanityConfigured/)
+  assert.doesNotMatch(sanity, /^export const sanityClient = createSanityClient/m)
+  assert.match(sanity, /SANITY_PREVIEW_NOT_CONFIGURED/)
+})
+
+test('CMS-backed data helpers fail closed without provider configuration', () => {
+  assert.match(data, /if\s*\(!isSanityConfigured\(\)\)/)
+  assert.match(data, /return \[\]/)
+  assert.match(data, /return \{ page: null, site: null \}/)
 })
 
 test('redirect provider failure does not take down the storefront build', () => {
