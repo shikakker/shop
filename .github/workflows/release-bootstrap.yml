@@ -5,6 +5,11 @@ on:
     branches: [portfolio-improvements-2026-08]
     paths:
       - .github/workflows/release-bootstrap.yml
+      - package.json
+      - next.config.js
+      - pages/api/preview.js
+      - lib/sanity.js
+      - tests/**
 
 permissions:
   contents: write
@@ -30,6 +35,8 @@ jobs:
         run: npm run typecheck
       - name: Production storefront build
         run: npm run build
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
       - name: Commit verified lockfile
         run: |
           git config user.name 'Egor Denisov'
